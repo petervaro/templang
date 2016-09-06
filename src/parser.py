@@ -4,6 +4,12 @@
 # Import python modules
 from itertools import chain, islice
 
+# Import templang modules
+from error import TempLangError
+
+
+#------------------------------------------------------------------------------#
+# Module level constants
 WHITE_SPACES      = ' \t\v'
 ATTRIBUTE_ESCAPES = {
     '\\' : '\\',
@@ -20,8 +26,16 @@ LITERAL_ESCAPES   = {
     '0'  : '\x00'
 }
 
+
+
 #------------------------------------------------------------------------------#
 class Expression:
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    @property
+    def value(self):
+        return self._value
+
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __init__(self, report):
@@ -63,13 +77,16 @@ class Element(Expression):
 
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def __iter__(self):
+        yield from self._children
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
         if self._children:
-            return ('<Element name="{}">{}'
-                    '</Element>').format(self._value,
-                                         ''.join(map(str, self._children)))
-        else:
-            return '<Element name="{}"/>'.format(self._value)
+            return '({} {})'.format(self._value,
+                                    ' '.join(map(str, self._children)))
+        return '({})'.format(self._value)
 
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
@@ -84,10 +101,7 @@ class Attribute(Expression):
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
-        if self._value:
-            return '<Attribute>{}</Attribute>'.format(self._value)
-        else:
-            return '<Attribute/>'
+        return '[{}]'.format(' '.join(self._value.strip().split()))
 
 
 
@@ -96,10 +110,7 @@ class Literal(Expression):
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
-        if self._value:
-            return '<Literal>{}</Literal>'.format(self._value)
-        else:
-            return '<Literal/>'
+        return '{{{}}}'.format(self._value)
 
 
 
@@ -268,32 +279,7 @@ class ParseStates:
 
 
 #------------------------------------------------------------------------------#
-class SyntacticError(Exception):
-
-    MESSAGE       = ''
-    NOTE          = ''
-    FORMAT_STRING = ('\n'
-                     'Error: {ERROR.MESSAGE}\n'
-                     'In line {LINENO}, at column {COLUMN}:\n\n'
-                     '    {LINE}\n'
-                     '    {PADDING}^\n'
-                     '{ERROR.note}')
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    def __init__(self, report=None):
-        self._report = report
-        self.note    = '(Note: {})\n'.format(self.NOTE) if self.NOTE else ''
-
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    def __repr__(self):
-        report = self._report
-        return self.FORMAT_STRING.format(ERROR   = self,
-                                         LINE    = report.line,
-                                         LINENO  = report.line_index + 1,
-                                         COLUMN  = report.char_index + 1,
-                                         PADDING = report.char_index*' ')
-
+class SyntacticError(TempLangError): pass
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class InvalidEscapeSequence(SyntacticError):
     MESSAGE = "Invalid escape sequence found"
@@ -355,9 +341,6 @@ def _parse(root   : Element,
     literal   = None
 
     for char in states:
-
-        print('comment level:', states.is_comment_open)
-        _debug(states)
 
         if literal:
             if char == '\\':
@@ -423,13 +406,11 @@ def _parse(root   : Element,
                     states.comment_open()
                     continue
 
-                print('> elem')
                 states.step_back()
                 try:
                     _parse(element, states)
                 except UnbalancedClosingParenthesis:
                     states.step_back()
-                print('< elem')
                 continue
 
             elif char == ')':
