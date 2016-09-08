@@ -27,25 +27,7 @@
 		</dict>
 		<dict>
 			<key>begin</key>
-			<string>\(\s*((\$(\\(\(|\)|n|a|b|f|n|r|t|v|\\|0)|[^\s()])*)|([A-Z0-9-_]+)|((\\(\(|\)|n|a|b|f|n|r|t|v|\\|0)|[^\s()])*))\s*</string>
-			<key>beginCaptures</key>
-			<dict>
-				<key>2</key>
-				<dict>
-					<key>name</key>
-					<string>entity.other.macro.tl</string>
-				</dict>
-				<key>5</key>
-				<dict>
-					<key>name</key>
-					<string>constant.language.tl</string>
-				</dict>
-				<key>6</key>
-				<dict>
-					<key>name</key>
-					<string>support.function.name.tl</string>
-				</dict>
-			</dict>
+			<string>\(</string>
 			<key>end</key>
 			<string>\)</string>
 			<key>name</key>
@@ -54,7 +36,48 @@
 			<array>
 				<dict>
 					<key>include</key>
-					<string>$self</string>
+					<string>#whitespace</string>
+				</dict>
+				<dict>
+					<key>include</key>
+					<string>#comment</string>
+				</dict>
+				<dict>
+					<key>begin</key>
+					<string>((\$[^\s(){}\[\]]*)|([A-Z0-9-_]+)|([^\s(){}\[\]]*))</string>
+					<key>beginCaptures</key>
+					<dict>
+						<key>2</key>
+						<dict>
+							<key>name</key>
+							<string>storage.modifier.variable.tl</string>
+						</dict>
+						<key>3</key>
+						<dict>
+							<key>name</key>
+							<string>constant.language.tl</string>
+						</dict>
+						<key>4</key>
+						<dict>
+							<key>name</key>
+							<string>support.function.name.tl</string>
+						</dict>
+					</dict>
+					<key>end</key>
+					<string>(?=\))</string>
+					<key>name</key>
+					<string>meta.element.name.tl</string>
+					<key>patterns</key>
+					<array>
+						<dict>
+							<key>include</key>
+							<string>#whitespace</string>
+						</dict>
+						<dict>
+							<key>include</key>
+							<string>$self</string>
+						</dict>
+					</array>
 				</dict>
 			</array>
 		</dict>
@@ -78,20 +101,24 @@
 		<key>attributes</key>
 		<dict>
 			<key>begin</key>
-			<string>\[\s*</string>
+			<string>\[</string>
 			<key>end</key>
 			<string>\]</string>
 			<key>name</key>
-			<string>meta.attributes.tl</string>
+			<string>meta.attribute.tl</string>
 			<key>patterns</key>
 			<array>
+				<dict>
+					<key>include</key>
+					<string>#whitespace</string>
+				</dict>
 				<dict>
 					<key>include</key>
 					<string>#comment</string>
 				</dict>
 				<dict>
 					<key>begin</key>
-					<string>((\$(\\(\[|\]|n|a|b|f|n|r|t|v|\\|0)|[^\s\[\]])*)|((\\(\[|\]|n|a|b|f|n|r|t|v|\\|0)|[^\s\[\]])*))\s*</string>
+					<string>((\$([^\s{}\[\]](?!\(\*))*)|(((?!\(\*)[^\s{}\[\]](?!\(\*))*))</string>
 					<key>beginCaptures</key>
 					<dict>
 						<key>2</key>
@@ -99,27 +126,29 @@
 							<key>name</key>
 							<string>support.type.special.tl</string>
 						</dict>
-						<key>5</key>
+						<key>4</key>
 						<dict>
 							<key>name</key>
-							<string>storage.modifier.variable.attribute.tl</string>
+							<string>variable.language.tl</string>
 						</dict>
 					</dict>
 					<key>end</key>
 					<string>(?=\])</string>
 					<key>name</key>
-					<string>variable.language.attributes.tl</string>
-					<key>pattern</key>
+					<string>meta.attribute.name.tl</string>
+					<key>patterns</key>
 					<array>
+						<dict>
+							<key>include</key>
+							<string>#whitespace</string>
+						</dict>
 						<dict>
 							<key>include</key>
 							<string>#comment</string>
 						</dict>
 						<dict>
-							<key>match</key>
-							<string>\\(\[|\]|n|a|b|f|n|r|t|v|\\|0)</string>
-							<key>name</key>
-							<string>variable.language.attributes.escaped.tl</string>
+							<key>include</key>
+							<string>#literals</string>
 						</dict>
 						<dict>
 							<key>match</key>
@@ -139,6 +168,13 @@
 			<string>\*\)</string>
 			<key>name</key>
 			<string>comment.block.tl</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>#comment</string>
+				</dict>
+			</array>
 		</dict>
 		<key>literals</key>
 		<dict>
@@ -161,7 +197,7 @@
 					<array>
 						<dict>
 							<key>match</key>
-							<string>\\({|}|n|a|b|f|n|r|t|v|\\|0)</string>
+							<string>\\({|}|n|f|n|r|t|v|\\|0)</string>
 							<key>name</key>
 							<string>constant.character.escaped.tl</string>
 						</dict>
@@ -174,6 +210,13 @@
 					</array>
 				</dict>
 			</array>
+		</dict>
+		<key>whitespace</key>
+		<dict>
+			<key>match</key>
+			<string>\s|\n</string>
+			<key>name</key>
+			<string>meta.whitespace.tl</string>
 		</dict>
 	</dict>
 	<key>scopeName</key>

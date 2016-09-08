@@ -1,3 +1,3 @@
-[use io]
+[use {io}]
 
 ($print {hello world})

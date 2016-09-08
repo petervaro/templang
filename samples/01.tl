@@ -1,30 +1,30 @@
 (* Because the top level is just another element (root) it can handle the
    attributes and literals. In this case, the only built-in attribute, the
    `use` will load the `std` and the `html` packages *)
-[use std]
-[use html]
+[use {std}]
+[use {html}]
 
 (doctype [html])
-(html [lang en]
+(html [lang {en}]
     (head
-        (meta [charset utf-8]))
+        (meta [charset {utf-8}]))
     (body
-        ($markdown [sample.md])
-        (div [id first-div]
-             [class this-class
-                    that-class]
+        ($markdown [path {sample.md}])
+        (div [id {first-div}]
+             [class {this-class}
+                    {that-class}]
             {lorem ipsum dolor
              sit amet et cetera}
              (* The order of literals and children matters, however the order of
                 the attributes does not. Though the convention is to write them
                 as close to the `keyword` as possible *)
-             (span [class lang-keyword]
+             (span [class {lang-keyword}]
                 {-- oh, yeah!}))
         (pre
             {lorem ipsum dolor
              sit amet et cetera})
-        (div [class that-class]
-             [$literal-join \n]
+        (div [class {that-class}]
+             [$literal-join {\n}]
             {one line here}
             {another one here}
             {and the last one here})))
@@ -32,9 +32,9 @@
 
 (* The `std` package has basic logic and IO keywords, so it can handle loops,
    conditionals, and can print to console, or write this document *)
-($for [var i 0..10]
-    ($write [$literal-raw true] {index = })
-    ($write ($var [i])(NEW-LINE)))
+($for {i} ($range ($int {10}))
+    ($write [$literal-raw] {index = })
+    ($write ($to-string ($get {i}))(NEW-LINE)))
 
 (* Empty parenthesis are valid elements too. The `std` package actually uses
    them as groups, here for example, if the `ifdef` does not succeed, it will
@@ -48,5 +48,5 @@
 (* The `std` package also contains a `shell` command to interact directly with
    the environment, which can of course run arbitrary scripts. The output of
    the script can be redirected to this document *)
-($shell [$redirect-output true]
-        [python script.py])
+($shell [$redirect-output]
+        [python {script.py}])

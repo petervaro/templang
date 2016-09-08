@@ -1,4 +1,3 @@
-((hello)[x y]{alpha})
 (* Simple comment *)
 (* (* (* (* Nested comments *) *) *) *)
 (hello (world (good (bye))))
@@ -24,4 +23,4 @@
 
 ({\x00}{\\\t\n\0})
 
-((hello)[x y]{alpha})
+((hello)[x {y}]{alpha})

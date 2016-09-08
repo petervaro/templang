@@ -1,7 +1,7 @@
 ## INFO ##
 ## INFO ##
 
-ESCAPE_SEQUENCES = r'n|a|b|f|n|r|t|v|\\|0'
+ESCAPE_SEQUENCES = r'n|f|n|r|t|v|\\|0'
 
 # Syntax Definition
 syntax = {
@@ -23,40 +23,45 @@ syntax = {
 #-- ELEMENTS ------------------------------------------------------------------#
         {
             'name' : 'meta.element.{SCOPE}',
-            'begin': r'\(\s*'
-                    r'('
-                        # Macros
-                        r'('
-                            r'\$('
-                                r'\\(\(|\)|' + ESCAPE_SEQUENCES + r')'
-                                r'|'
-                                r'[^\s()]'
-                            r')*'
-                        r')'
-                    r'|'
-                        # Constants
-                        r'('
-                            r'[A-Z0-9-_]+'
-                        r')'
-                    r'|'
-                        # Regulars
-                        r'('
-                            r'('
-                                r'\\(\(|\)|' + ESCAPE_SEQUENCES + r')'
-                                r'|'
-                                r'[^\s()]'
-                            r')*'
-                        r')'
-                    r')\s*',
-            'beginCaptures':
-            {
-                2: {'name': 'entity.other.macro.{SCOPE}'},
-                5: {'name': 'constant.language.{SCOPE}'},
-                6: {'name': 'support.function.name.{SCOPE}'}
-            },
+            'begin': r'\(',
             'patterns':
             [
-                {'include' : '$self'}
+                {
+                    'include' : '#whitespace'
+                },
+                {
+                    'include' : '#comment'
+                },
+                {
+                    'name' : 'meta.element.name.{SCOPE}',
+                    'begin': r'('
+                                # Macros
+                                r'(\$[^\s(){}\[\]]*)'
+                             r'|'
+                                # Constants
+                                r'([A-Z0-9-_]+)'
+                             r'|'
+                                # Regulars
+                                r'([^\s(){}\[\]]*)'
+                             r')',
+
+                    'beginCaptures':
+                    {
+                        2: {'name': 'storage.modifier.variable.{SCOPE}'},
+                        3: {'name': 'constant.language.{SCOPE}'},
+                        4: {'name': 'support.function.name.{SCOPE}'}
+                    },
+                    'patterns':
+                    [
+                        {
+                            'include' : '#whitespace'
+                        },
+                        {
+                            'include' : '$self'
+                        }
+                    ],
+                    'end': r'(?=\))'
+                }
             ],
             'end' : r'\)'
         },
@@ -81,56 +86,60 @@ syntax = {
 #-- REPOSITORY ----------------------------------------------------------------#
     'repository':
     {
+        'whitespace':
+        {
+            'name' : 'meta.whitespace.{SCOPE}',
+            'match': r'\s',
+        },
+
         'comment':
         {
             'name' : 'comment.block.{SCOPE}',
             'begin': r'\(\*',
+            'patterns':
+            [
+                {'include': '#comment'}
+            ],
             'end'  : r'\*\)'
         },
 
         'attributes':
         {
-            'name' : 'meta.attributes.{SCOPE}',
-            'begin': r'\[\s*',
+            'name' : 'meta.attribute.{SCOPE}',
+            'begin': r'\[',
             'patterns':
             [
+                {
+                    'include' : '#whitespace'
+                },
                 {
                     'include' : '#comment'
                 },
                 {
-                    'name' : 'variable.language.attributes.{SCOPE}',
+                    'name' : 'meta.attribute.name.{SCOPE}',
                     'begin': r'('
                                 # Internals
-                                r'('
-                                    r'\$('
-                                        r'\\(\[|\]|' + ESCAPE_SEQUENCES + r')'
-                                        r'|'
-                                        r'[^\s\[\]]'
-                                    r')*'
-                                r')'
+                                r'(\$([^\s{}\[\]](?!\(\*))*)'
                             r'|'
                                 # Regulars
-                                r'('
-                                    r'('
-                                        r'\\(\[|\]|' + ESCAPE_SEQUENCES + r')'
-                                        r'|'
-                                        r'[^\s\[\]]'
-                                    r')*'
-                                r')'
-                            r')\s*',
+                                r'(((?!\(\*)[^\s{}\[\]](?!\(\*))*)'
+                                #  r'(([^\s{}\[\]](?!\(\*))*)'
+                            r')',
                     'beginCaptures':
                     {
                         2: {'name': 'support.type.special.{SCOPE}'},
-                        5: {'name': 'storage.modifier.variable.attribute.{SCOPE}'}
+                        4: {'name': 'variable.language.{SCOPE}'}
                     },
-                    'pattern':
+                    'patterns':
                     [
+                        {
+                            'include' : '#whitespace'
+                        },
                         {
                             'include' : '#comment'
                         },
                         {
-                            'name'  : 'variable.language.attributes.escaped.{SCOPE}',
-                            'match' : r'\\(\[|\]|' + ESCAPE_SEQUENCES + r')'
+                            'include' : '#literals'
                         },
                         {
                             'name'  : 'invalid.illegal.symbol.{SCOPE}',
@@ -142,55 +151,6 @@ syntax = {
             ],
             'end' : r'\]'
         },
-
-        #  'attributes':
-        #  {
-        #      'name' : 'meta.attributes.{SCOPE}',
-        #      'begin': r'\[\s*'
-        #          r'('
-        #              # Internals
-        #              r'('
-        #                  r'\$('
-        #                      r'\\(\[|\]|' + ESCAPE_SEQUENCES + r')'
-        #                      r'|'
-        #                      r'[^\s\[\]]'
-        #                  r')*'
-        #              r')'
-        #          r'|'
-        #              # Regulars
-        #              r'('
-        #                  r'('
-        #                      r'\\(\[|\]|' + ESCAPE_SEQUENCES + r')'
-        #                      r'|'
-        #                      r'[^\s\[\]]'
-        #                  r')*'
-        #              r')'
-        #          r')\s*',
-        #      'beginCaptures':
-        #      {
-        #          2: {'name': 'support.type.special.{SCOPE}'},
-        #          5: {'name': 'storage.modifier.variable.attribute.{SCOPE}'}
-        #      },
-        #      'patterns':
-        #      [
-        #          {
-        #              'include' : '#comment'
-        #          },
-        #          {
-        #              'name'  : 'string.interpolated.symbol.{SCOPE}',
-        #              'match' : r'\\(\[|\]|' + ESCAPE_SEQUENCES + r')'
-        #          },
-        #          {
-        #              'name'  : 'invalid.illegal.symbol.{SCOPE}',
-        #              'match' : r'\['
-        #          },
-        #          {
-        #              'name'  : 'variable.language.attributes.{SCOPE}',
-        #              'match' : r'(?=\])|.'
-        #          }
-        #      ],
-        #      'end' : r'\]'
-        #  },
 
         'literals':
         {

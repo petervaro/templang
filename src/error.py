@@ -8,7 +8,7 @@ class TempLangError(Exception):
     NOTE          = ''
     FORMAT_STRING = ('\n'
                      'Error: {ERROR.MESSAGE}\n'
-                     'In line {LINENO}, at column {COLUMN}:\n\n'
+                     'In file "{PATH}", line {LINENO}, column {COLUMN}:\n\n'
                      '    {LINE}\n'
                      '    {PADDING}^\n'
                      '{ERROR.note}')
@@ -23,6 +23,7 @@ class TempLangError(Exception):
     def __repr__(self):
         report = self._report
         return self.FORMAT_STRING.format(ERROR   = self,
+                                         PATH    = report.path,
                                          LINE    = report.line,
                                          LINENO  = report.line_index + 1,
                                          COLUMN  = report.char_index + 1,

@@ -24,8 +24,9 @@ def _print_set_option(option,
     except ValueError:
         try:
             value, = values
-            options[option] = value
+            options[option] = value.value
         except ValueError:
+            #  options[option] = ''
             raise TooFewAttributeParameter(report)
 
 
@@ -51,9 +52,10 @@ def _print(element,
                'end' : '\n'}
     for expression in element:
         if isinstance(expression, Attribute):
-            keyword, *values = expression.value.split()
             try:
-                _PRINT_OPTIONS[keyword](options, values, expression.report)
+                _PRINT_OPTIONS[expression.value](options,
+                                                 expression,
+                                                 expression.report)
             except KeyError:
                 raise UnknownAttribute(expression.report)
         elif isinstance(expression, Literal):
@@ -72,10 +74,10 @@ def print_(element,
     """
     Print to console
     Usage:
-        ($print <INPUTS>)
-    Special attributes:
-        [$end <END>]
-        [$sep <SEPARATOR>]
+        ($print <INPUTS> <OPTIONS>)
+        OPTIONS:
+            [end {<END>}]
+            [sep {<SEPARATOR>}]
     """
     _print(element, states, stdout)
 
@@ -87,7 +89,10 @@ def write(element,
     """
     Write to output document
     Usage:
-        ($write <INPUTS>)
+        ($write <INPUTS> <OPTIONS>)
+        OPTIONS:
+            [end {<END>}]
+            [sep {<SEPARATOR>}]
     """
     _print(element, states, states.output)
 
@@ -98,15 +103,14 @@ def to_string(element,
               states):
     """
     Usage:
-        ($str <INPUTS>)
+        ($to-string <INPUTS>)
     """
-    return ''.join(map(str, element))
+    return ' '.join(map(str, element))
 
 
 
 #------------------------------------------------------------------------------#
 # Export keywords
-ATTR_KEYWORDS = {}
 ELEM_KEYWORDS = {
     '$print'     : print_,
     '$write'     : write,

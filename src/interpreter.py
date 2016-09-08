@@ -31,9 +31,9 @@ class TooManyAttributeParameters(InvalidAttributeParameter):
 
 #------------------------------------------------------------------------------#
 def _element_eval(element, states):
-    keyword, *_ = element.value.split()
     try:
-        return states.ELEM_KEYWORDS[keyword](element, states)
+        result = states.ELEM_KEYWORDS[element.value](element, states)
+        return '' if result is None else result
     except KeyError:
         raise UnknownKeyword(element.report)
 
@@ -41,9 +41,8 @@ def _element_eval(element, states):
 
 #------------------------------------------------------------------------------#
 def _attribute_eval(attribute, states):
-    keyword, *_ = attribute.value.split()
     try:
-        return states.ATTR_KEYWORDS[keyword](attribute, states)
+        states.ATTR_KEYWORDS[attribute.value](attribute, states)
     except KeyError:
         raise UnknownAttribute(attribute.report)
 
@@ -56,10 +55,9 @@ def _literal_eval(element, states):
 
 
 #------------------------------------------------------------------------------#
-def _use(element, states):
-    _, *package_names = element.value.split()
-    for package_name in package_names:
-        module = import_module('packages.' + package_name)
+def _use(attribute, states):
+    for package_name in attribute:
+        module = import_module('packages.' + package_name.value)
         for attr in ('ROOT_BEHAVIOR',
                      'ATTR_KEYWORDS',
                      'ELEM_KEYWORDS'):
@@ -129,9 +127,10 @@ class InterpreterStates:
 
 
 #------------------------------------------------------------------------------#
-def interpret(source: 'file',
+def interpret(path  : str,
+              source: 'file',
               output: 'file'):
-    root   = parse(source.read())
+    root   = parse(path, source.read())
     states = InterpreterStates(root, output)
     for expression in root:
         if isinstance(expression, Element):

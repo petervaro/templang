@@ -11,17 +11,14 @@ from error import TempLangError
 #------------------------------------------------------------------------------#
 # Module level constants
 WHITE_SPACES      = ' \t\v'
-ATTRIBUTE_ESCAPES = {
-    '\\' : '\\',
-    '['  : '[',
-    ']'  : ']'
-}
 LITERAL_ESCAPES   = {
     '\\' : '\\',
     '{'  : '{',
     '}'  : '}',
     'n'  : '\n',
     't'  : '\t',
+    'r'  : '\r',
+    'f'  : '\f',
     'v'  : '\v',
     '0'  : '\x00'
 }
@@ -51,7 +48,7 @@ class Expression:
 
 
 #------------------------------------------------------------------------------#
-class Element(Expression):
+class Container(Expression):
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __init__(self, *args, **kwargs):
@@ -64,13 +61,13 @@ class Element(Expression):
     def __iadd__(self, value):
         # If the given value is a white-space character
         if value in WHITE_SPACES:
-            # If element already has a name
+            # If container already has a name
             if self._value:
                 self._is_name_finished = True
-        # If this element already have a name
+        # If this container already have a name
         elif self._is_name_finished:
             raise UnexpectedCharacter
-        # If the given character should be added to the element's name
+        # If the given character should be added to the container's name
         else:
             self._value += value
         return self
@@ -82,14 +79,6 @@ class Element(Expression):
 
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    def __repr__(self):
-        if self._children:
-            return '({} {})'.format(self._value,
-                                    ' '.join(map(str, self._children)))
-        return '({})'.format(self._value)
-
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def append(self, child):
         self._is_name_finished = True
         self._children.append(child)
@@ -97,10 +86,25 @@ class Element(Expression):
 
 
 #------------------------------------------------------------------------------#
-class Attribute(Expression):
+class Element(Container):
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
+        if self._children:
+            return '({} {})'.format(self._value,
+                                    ' '.join(map(str, self._children)))
+        return '({})'.format(self._value)
+
+
+
+#------------------------------------------------------------------------------#
+class Attribute(Container):
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def __repr__(self):
+        if self._children:
+            return '[{} {}]'.format(self._value,
+                                    ' '.join(map(str, self._children)))
         return '[{}]'.format(' '.join(self._value.strip().split()))
 
 
@@ -123,7 +127,7 @@ class Root(Element):
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
-        return '<Root>{}</Root>'.format(''.join(map(str, self._children)))
+        return ' '.join(map(str, self._children))
 
 
 
@@ -135,22 +139,33 @@ class CommentIsNotOpen(Exception): pass
 #------------------------------------------------------------------------------#
 class ParseStatesReport:
 
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    @property
+    def path(self):
+        return self._path
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     @property
     def line(self):
         return self._lines[self._line_index]
 
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     @property
     def line_index(self):
         return self._line_index
 
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     @property
     def char_index(self):
         return self._char_index
 
 
-    def __init__(self, lines,
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def __init__(self, path,
+                       lines,
                        line_index,
                        char_index):
+        self._path       = path
         self._lines      = lines
         self._line_index = line_index
         self._char_index = char_index
@@ -215,17 +230,21 @@ class ParseStates:
     @property
     def report(self, line_index=None,
                      char_index=None):
-        line_index = self._line_index if line_index is None else line_index
-        char_index = self._char_index if char_index is None else char_index
-        return ParseStatesReport(self._lines, line_index, char_index)
+        return ParseStatesReport(
+            self._path,
+            self._lines,
+            self._line_index if line_index is None else line_index,
+            self._char_index if char_index is None else char_index)
 
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    def __init__(self, lines):
+    def __init__(self, path,
+                       lines):
         self._line_index    = 0
         self._char_index    = 0
         self._comment_level = 0
         self._stored_state  = None
+        self._path          = path
         self._lines         = lines
         self._iter_chars    = self._new_iter_chars()
 
@@ -286,7 +305,6 @@ class InvalidEscapeSequence(SyntacticError):
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class UnexpectedCharacter(SyntacticError):
     MESSAGE = "Unexpected character found"
-    NOTE    = "At this level only elements, attributes and literals are allowed"
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class UnbalancedOpeningParenthesis(SyntacticError):
     MESSAGE = "Unbalanced opening parenthesis: `(`"
@@ -314,11 +332,16 @@ class UnbalancedClosingBrace(SyntacticError):
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class UnexpectedAttributeOpening(UnexpectedCharacter):
     MESSAGE = "Unexpected character found: `[`"
-    NOTE    = "Brackets can be used inside attributes by escaping them: `\\[`"
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class UnexpectedLiteralOpening(UnexpectedCharacter):
     MESSAGE = "Unexpected character found: `{`"
     NOTE    = "Braces can be used inside literals by escaping them: `\\{`"
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class UnexpectedCharacterInElement(UnexpectedCharacter):
+    NOTE = "At this level only elements, attributes and literals are allowed"
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class UnexpectedCharacterInAttribute(UnexpectedCharacter):
+    NOTE = "At this level only literals are allowed"
 
 
 
@@ -349,9 +372,12 @@ def _parse(root   : Element,
 
             elif char == '}':
                 try:
-                    element.append(literal)
-                except AttributeError as e:
-                    root.append(literal)
+                    attribute.append(literal)
+                except AttributeError:
+                    try:
+                        element.append(literal)
+                    except AttributeError:
+                        root.append(literal)
                 literal = None
                 continue
 
@@ -376,15 +402,16 @@ def _parse(root   : Element,
             continue
 
         elif attribute:
-            if char == '\\':
-                char = next(states)
-                char = ATTRIBUTE_ESCAPES.get(char, '\\' + char)
 
-            elif (char == '(' and
-                  states.next_char == '*'):
+            if (char == '(' and
+                states.next_char == '*'):
                     next(states)
                     states.comment_open()
                     continue
+
+            elif char == '{':
+                literal = Literal(states.report)
+                continue
 
             elif char == ']':
                 try:
@@ -397,7 +424,11 @@ def _parse(root   : Element,
             elif char == '[':
                 raise UnexpectedAttributeOpening(states.report)
 
-            attribute += char
+            try:
+                attribute += char
+            except UnexpectedCharacter:
+                raise UnexpectedCharacterInAttribute(states.report)
+
 
         elif element:
             if char == '(':
@@ -426,8 +457,10 @@ def _parse(root   : Element,
                 literal = Literal(states.report)
                 continue
 
-            element += char
-            continue
+            try:
+                element += char
+            except UnexpectedCharacter:
+                raise UnexpectedCharacterInElement(states.report)
 
         elif char == '(':
             if states.next_char == '*':
@@ -474,10 +507,11 @@ def _parse(root   : Element,
 
 
 #------------------------------------------------------------------------------#
-def parse(text: str):
+def parse(path: str,
+          text: str):
     if not isinstance(text, str):
         raise ValueError('first argument should be `str` and not:',
                          text.__class__.__qualname__)
 
     return _parse(root   = Root(),
-                  states = ParseStates(text.split('\n')))
+                  states = ParseStates(path, text.split('\n')))

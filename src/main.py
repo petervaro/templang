@@ -8,9 +8,11 @@ from error       import TempLangError
 
 #------------------------------------------------------------------------------#
 if __name__ == '__main__':
-    with open('../samples/05.tl') as input, \
-         open('/tmp/tl.out', 'w') as output:
+    input_path  = '../samples/05.tl'
+    output_path = '/tmp/tl.out'
+    with open(input_path)       as input, \
+         open(output_path, 'w') as output:
             try:
-                interpret(input, output)
+                interpret(input_path, input, output)
             except TempLangError as error:
                 print(repr(error))
