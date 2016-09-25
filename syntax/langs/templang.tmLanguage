@@ -26,60 +26,8 @@
 			<string>#comment</string>
 		</dict>
 		<dict>
-			<key>begin</key>
-			<string>\(</string>
-			<key>end</key>
-			<string>\)</string>
-			<key>name</key>
-			<string>meta.element.tl</string>
-			<key>patterns</key>
-			<array>
-				<dict>
-					<key>include</key>
-					<string>#whitespace</string>
-				</dict>
-				<dict>
-					<key>include</key>
-					<string>#comment</string>
-				</dict>
-				<dict>
-					<key>begin</key>
-					<string>((\$[^\s(){}\[\]]*)|([A-Z0-9-_]+)|([^\s(){}\[\]]*))</string>
-					<key>beginCaptures</key>
-					<dict>
-						<key>2</key>
-						<dict>
-							<key>name</key>
-							<string>storage.modifier.variable.tl</string>
-						</dict>
-						<key>3</key>
-						<dict>
-							<key>name</key>
-							<string>constant.language.tl</string>
-						</dict>
-						<key>4</key>
-						<dict>
-							<key>name</key>
-							<string>support.function.name.tl</string>
-						</dict>
-					</dict>
-					<key>end</key>
-					<string>(?=\))</string>
-					<key>name</key>
-					<string>meta.element.name.tl</string>
-					<key>patterns</key>
-					<array>
-						<dict>
-							<key>include</key>
-							<string>#whitespace</string>
-						</dict>
-						<dict>
-							<key>include</key>
-							<string>$self</string>
-						</dict>
-					</array>
-				</dict>
-			</array>
+			<key>include</key>
+			<string>#elements</string>
 		</dict>
 		<dict>
 			<key>include</key>
@@ -148,6 +96,10 @@
 						</dict>
 						<dict>
 							<key>include</key>
+							<string>#elements</string>
+						</dict>
+						<dict>
+							<key>include</key>
 							<string>#literals</string>
 						</dict>
 						<dict>
@@ -176,6 +128,73 @@
 				</dict>
 			</array>
 		</dict>
+		<key>elements</key>
+		<dict>
+			<key>begin</key>
+			<string>\(</string>
+			<key>end</key>
+			<string>\)</string>
+			<key>name</key>
+			<string>meta.element.tl</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>#whitespace</string>
+				</dict>
+				<dict>
+					<key>include</key>
+					<string>#comment</string>
+				</dict>
+				<dict>
+					<key>begin</key>
+					<string>((\$[^\s(){}\[\]]*)|(&amp;[^\s(){}\[\]]*)|([^\s(){}\[\]]+!)|([A-Z_][A-Z0-9-_]+\b)|([^\s(){}\[\]]*))</string>
+					<key>beginCaptures</key>
+					<dict>
+						<key>2</key>
+						<dict>
+							<key>name</key>
+							<string>storage.modifier.variable.tl</string>
+						</dict>
+						<key>3</key>
+						<dict>
+							<key>name</key>
+							<string>keyword.type.variable.tl</string>
+						</dict>
+						<key>4</key>
+						<dict>
+							<key>name</key>
+							<string>entity.other.mixin.tl</string>
+						</dict>
+						<key>5</key>
+						<dict>
+							<key>name</key>
+							<string>constant.language.tl</string>
+						</dict>
+						<key>6</key>
+						<dict>
+							<key>name</key>
+							<string>support.function.name.tl</string>
+						</dict>
+					</dict>
+					<key>end</key>
+					<string>(?=\))</string>
+					<key>name</key>
+					<string>meta.element.name.tl</string>
+					<key>patterns</key>
+					<array>
+						<dict>
+							<key>include</key>
+							<string>#whitespace</string>
+						</dict>
+						<dict>
+							<key>include</key>
+							<string>$self</string>
+						</dict>
+					</array>
+				</dict>
+			</array>
+		</dict>
 		<key>literals</key>
 		<dict>
 			<key>begin</key>
@@ -197,7 +216,7 @@
 					<array>
 						<dict>
 							<key>match</key>
-							<string>\\({|}|n|f|n|r|t|v|\\|0)</string>
+							<string>\\({|}|n|f|n|r|t|v|\\|0)?</string>
 							<key>name</key>
 							<string>constant.character.escaped.tl</string>
 						</dict>

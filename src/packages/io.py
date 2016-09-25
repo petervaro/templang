@@ -99,20 +99,8 @@ def write(element,
 
 
 #------------------------------------------------------------------------------#
-def to_string(element,
-              states):
-    """
-    Usage:
-        ($to-string <INPUTS>)
-    """
-    return ' '.join(map(str, element))
-
-
-
-#------------------------------------------------------------------------------#
 # Export keywords
 ELEM_KEYWORDS = {
     '$print'     : print_,
-    '$write'     : write,
-    '$to-string' : to_string,
+    '$write'     : write
 }

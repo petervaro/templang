@@ -6,11 +6,23 @@ from error       import TempLangError
 from parser      import (Literal,
                          Attribute)
 from interpreter import (interpret,
+                         UnknownKeyword,
                          UnexpectedExpressionType,
-                         UnknownAttributeForElement)
+                         UnknownAttributeForElement,
+                         ElementParameterTypeError)
 
+
+#------------------------------------------------------------------------------#
+# Module level internal constant
+_EXPORTED = []
+
+
+
+#------------------------------------------------------------------------------#
 class FileNotFound(TempLangError):
     MESSAGE = 'File not found'
+
+
 
 # Helper functions
 #------------------------------------------------------------------------------#
@@ -42,14 +54,22 @@ def import_(element,
                  [path {<PATH..>}])
     """
     for path_literal in _get_path_from_attrs(element):
-        path = path_literal.value
+        path   = path_literal.value
+        export = {}
+        _EXPORTED.append(export)
         if not path.endswith('.tl'):
             path += '.tl'
         try:
             with open(path) as file:
                 interpret(path, file, states.output)
+                for keyword, callback in export.items():
+                    try:
+                        states.add_element(keyword, callback)
+                    except KeyError:
+                        raise
         except FileNotFoundError:
             raise FileNotFound(path_literal.report)
+        _EXPORTED.pop()
 
 
 
@@ -59,9 +79,20 @@ def export(element,
     """
     Export elements, which can be imported later on.
     Usage:
-        ($export <ANYTHING>)
+        ($export <KEYWORD1> <KEYWORD2> <KEYWORD...>)
     """
-    pass
+    try:
+        export = _EXPORTED[-1]
+    except IndexError:
+        return
+    for expression in element:
+        keyword = states.evaluate(expression)
+        if not isinstance(keyword, str):
+            raise ElementParameterTypeError(expression.report)
+        try:
+            export[keyword] = states.ELEM_KEYWORDS[keyword]
+        except KeyError:
+            raise UnknownKeyword(expression.report)
 
 
 
@@ -92,5 +123,5 @@ def include(element,
 ELEM_KEYWORDS = {
     '$import' : import_,
     '$export' : export,
-    '$include': include,
+    'include' : include,
 }

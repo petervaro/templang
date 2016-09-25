@@ -39,14 +39,20 @@ class TooFewAttributeParameter(InvalidAttributeParameter):
 class TooManyAttributeParameters(InvalidAttributeParameter):
     MESSAGE = 'Too many attribute parameters'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class ElementParameterTypeError(InvalidAttributeParameter):
+    MESSAGE = 'Invalid parameter type for element'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class AttributeParameterTypeError(InvalidAttributeParameter):
-    MESSAGE = 'Attribute Parameter should be a Literal'
+    MESSAGE = 'Invalid parameter type for attribute'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class TooFewExpressionsForElement(InvalidExpressionForElement):
     MESSAGE = 'Too few expressions for element'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class TooManyExpressionsForElement(InvalidExpressionForElement):
     MESSAGE = 'Too many expression for element'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class MissingPackage(InterpreterError):
+    MESSAGE = 'Package is missing'
 
 
 
@@ -126,8 +132,12 @@ class InterpreterStates:
     @staticmethod
     def _use(attribute,
              states):
-        for package_name in attribute:
-            module = import_module('packages.' + package_name.value)
+        for package_expr in attribute:
+            package_name = states.evaluate(package_expr)
+            try:
+                module = import_module('packages.' + package_name)
+            except ImportError:
+                raise MissingPackage(package_expr.report)
             for attr in ('ATTR_KEYWORDS',
                          'ELEM_KEYWORDS'):
                 try:
@@ -142,7 +152,7 @@ class InterpreterStates:
                states):
         result = None
         for expression in element:
-            result = evaluate(expression, states)
+            result = states.evaluate(expression)
         return result
 
 

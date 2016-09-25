@@ -10,9 +10,10 @@ from error import TempLangError
 
 #------------------------------------------------------------------------------#
 # Module level constants
-WHITE_SPACES      = ' \t\v'
+WHITE_SPACES      = ' \t\v\n'
 LITERAL_ESCAPES   = {
     '\\' : '\\',
+    '\n' : '',
     '{'  : '{',
     '}'  : '}',
     'n'  : '\n',
@@ -91,8 +92,10 @@ class Element(Container):
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
         if self._children:
-            return '({} {})'.format(self._value,
-                                    ' '.join(map(str, self._children)))
+            if self._value:
+                return '({} {})'.format(self._value,
+                                        ' '.join(map(str, self._children)))
+            return '({})'.format(' '.join(map(str, self._children)))
         return '({})'.format(self._value)
 
 
@@ -103,8 +106,10 @@ class Attribute(Container):
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
         if self._children:
-            return '[{} {}]'.format(self._value,
-                                    ' '.join(map(str, self._children)))
+            if self._value:
+                return '[{} {}]'.format(self._value,
+                                        ' '.join(map(str, self._children)))
+            return '[{}]'.format(' '.join(map(str, self._children)))
         return '[{}]'.format(' '.join(self._value.strip().split()))
 
 
@@ -115,6 +120,12 @@ class Literal(Expression):
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __repr__(self):
         return '{{{}}}'.format(self._value)
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def __iadd__(self, value):
+        self._value += value
+        return self
 
 
 
@@ -270,7 +281,7 @@ class ParseStates:
         # Iterate over the sliced lines, update line index
         for self._line_index, line in enumerate(lines, line_index):
             # Iterate over the current line
-            for self._curr_char in line:
+            for self._curr_char in chain(line, '\n'):
                 yield self._curr_char
                 # Update column index
                 self._char_index += 1
@@ -341,7 +352,7 @@ class UnexpectedCharacterInElement(UnexpectedCharacter):
     NOTE = "At this level only elements, attributes and literals are allowed"
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class UnexpectedCharacterInAttribute(UnexpectedCharacter):
-    NOTE = "At this level only literals are allowed"
+    NOTE = "At this level only elements and literals are allowed"
 
 
 
@@ -403,11 +414,18 @@ def _parse(root   : Element,
 
         elif attribute:
 
-            if (char == '(' and
-                states.next_char == '*'):
+            if char == '(':
+                if states.next_char == '*':
                     next(states)
                     states.comment_open()
                     continue
+
+                states.step_back()
+                try:
+                    _parse(attribute, states)
+                except UnbalancedClosingBracket:
+                    states.step_back()
+                continue
 
             elif char == '{':
                 literal = Literal(states.report)

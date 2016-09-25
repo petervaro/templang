@@ -1,11 +1,12 @@
 (* INFO **
 ** INFO *)
 
-[use {io}]
-[use {logic}]
-[use {__debug}]
+(* Use built-in packages *)
+[use {io}
+     {logic}]
 
 
+(*----------------------------------------------------------------------------*)
 ($var {&var} {hello world})
 ($print {&var =} (&var))
 
@@ -18,6 +19,7 @@
     ($print {I am printing!\n}))
 
 (printer!)
+
 
 (*----------------------------------------------------------------------------*)
 ($mixin [name {printer!}]

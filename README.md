@@ -112,7 +112,11 @@ Usage
 Dependencies
 ------------
 
-Only packages have dependencies: ...
+Only packages have dependencies:
+
+- `html`
+    - [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup)
+    - [Markdown](http://pythonhosted.org/Markdown)
 
 
 
@@ -129,7 +133,6 @@ Built-in package: `io`
 
 - `$print`
 - `$write`
-- `$to-string`
 
 
 
@@ -138,7 +141,7 @@ Built-in package: `file`
 
 - `$import`
 - `$export`
-- `$include`
+- `include`
 
 
 
@@ -170,6 +173,23 @@ Built-in package: `logic`
 
 
         (p! [text ''])          =>   (p [$join ' '] '')
+
+
+
+Built-in package: `string`
+--------------------------
+
+- `join`
+- `format`
+- `to-string`
+
+
+
+Built-in package: `html`
+--------------------------
+
+- all valid HTML5 tags + `!--`
+- `markdown`
 
 
 

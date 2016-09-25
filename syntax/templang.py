@@ -21,60 +21,13 @@ syntax = {
         {'include' : '#comment'},
 
 #-- ELEMENTS ------------------------------------------------------------------#
-        {
-            'name' : 'meta.element.{SCOPE}',
-            'begin': r'\(',
-            'patterns':
-            [
-                {
-                    'include' : '#whitespace'
-                },
-                {
-                    'include' : '#comment'
-                },
-                {
-                    'name' : 'meta.element.name.{SCOPE}',
-                    'begin': r'('
-                                # Macros
-                                r'(\$[^\s(){}\[\]]*)'
-                             r'|'
-                                # Constants
-                                r'([A-Z0-9-_]+)'
-                             r'|'
-                                # Regulars
-                                r'([^\s(){}\[\]]*)'
-                             r')',
-
-                    'beginCaptures':
-                    {
-                        2: {'name': 'storage.modifier.variable.{SCOPE}'},
-                        3: {'name': 'constant.language.{SCOPE}'},
-                        4: {'name': 'support.function.name.{SCOPE}'}
-                    },
-                    'patterns':
-                    [
-                        {
-                            'include' : '#whitespace'
-                        },
-                        {
-                            'include' : '$self'
-                        }
-                    ],
-                    'end': r'(?=\))'
-                }
-            ],
-            'end' : r'\)'
-        },
+        {'include' : '#elements'},
 
 #-- ROOT ATTRIBUTES -----------------------------------------------------------#
-        {
-            'include' : '#attributes'
-        },
+        {'include' : '#attributes'},
 
 #-- ROOT LITERALS -------------------------------------------------------------#
-        {
-            'include' : '#literals'
-        },
+        {'include' : '#literals'},
 
 #-- INVALIDS ------------------------------------------------------------------#
         {
@@ -101,6 +54,60 @@ syntax = {
                 {'include': '#comment'}
             ],
             'end'  : r'\*\)'
+        },
+
+        'elements':
+        {
+            'name' : 'meta.element.{SCOPE}',
+            'begin': r'\(',
+            'patterns':
+            [
+                {
+                    'include' : '#whitespace'
+                },
+                {
+                    'include' : '#comment'
+                },
+                {
+                    'name' : 'meta.element.name.{SCOPE}',
+                    'begin': r'('
+                                # Macros
+                                r'(\$[^\s(){}\[\]]*)'
+                             r'|'
+                                # Variables
+                                r'(&[^\s(){}\[\]]*)'
+                             r'|'
+                                # Mixins
+                                r'([^\s(){}\[\]]+!)'
+                             r'|'
+                                # Constants
+                                r'([A-Z_][A-Z0-9-_]+\b)'
+                             r'|'
+                                # Regulars
+                                r'([^\s(){}\[\]]*)'
+                             r')',
+
+                    'beginCaptures':
+                    {
+                        2: {'name': 'storage.modifier.variable.{SCOPE}'},
+                        3: {'name': 'keyword.type.variable.{SCOPE}'},
+                        4: {'name': 'entity.other.mixin.{SCOPE}'},
+                        5: {'name': 'constant.language.{SCOPE}'},
+                        6: {'name': 'support.function.name.{SCOPE}'}
+                    },
+                    'patterns':
+                    [
+                        {
+                            'include' : '#whitespace'
+                        },
+                        {
+                            'include' : '$self'
+                        }
+                    ],
+                    'end': r'(?=\))'
+                }
+            ],
+            'end' : r'\)'
         },
 
         'attributes':
@@ -139,6 +146,9 @@ syntax = {
                             'include' : '#comment'
                         },
                         {
+                            'include' : '#elements'
+                        },
+                        {
                             'include' : '#literals'
                         },
                         {
@@ -165,7 +175,7 @@ syntax = {
                     [
                         {
                             'name'  : 'constant.character.escaped.{SCOPE}',
-                            'match' : r'\\({|}|' + ESCAPE_SEQUENCES + r')'
+                            'match' : r'\\({|}|' + ESCAPE_SEQUENCES + r')?'
                         },
                         {
                             'name'  : 'invalid.illegal.symbol.{SCOPE}',
