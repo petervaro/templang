@@ -8,7 +8,7 @@ from error       import TempLangError
 
 #------------------------------------------------------------------------------#
 if __name__ == '__main__':
-    input_path  = '../samples/05.tl'
+    input_path  = '../samples/08a.tl'
     output_path = '/tmp/tl.out'
     with open(input_path)       as input, \
          open(output_path, 'w') as output:

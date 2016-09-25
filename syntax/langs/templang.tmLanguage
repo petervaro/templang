@@ -214,7 +214,7 @@
 		<key>whitespace</key>
 		<dict>
 			<key>match</key>
-			<string>\s|\n</string>
+			<string>\s</string>
 			<key>name</key>
 			<string>meta.whitespace.tl</string>
 		</dict>

@@ -5,9 +5,9 @@
 from sys import stdout
 
 # Import templang modules
-from parser import Attribute, Literal
-from interpreter import (interpret,
-                         UnknownAttribute,
+from parser      import (Literal,
+                         Attribute)
+from interpreter import (UnknownAttribute,
                          TooFewAttributeParameter,
                          TooManyAttributeParameters)
 
@@ -61,7 +61,7 @@ def _print(element,
         elif isinstance(expression, Literal):
             strings.append(expression.value)
         else:
-            strings.append(states.element_eval(expression, states))
+            strings.append(states.evaluate(expression))
 
     print(*strings, **options, file=stream)
 
@@ -114,5 +114,5 @@ def to_string(element,
 ELEM_KEYWORDS = {
     '$print'     : print_,
     '$write'     : write,
-    '$to-string' : to_string
+    '$to-string' : to_string,
 }

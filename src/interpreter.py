@@ -2,15 +2,21 @@
 ## INFO ##
 
 # Import python modules
+from random    import choice
 from importlib import import_module
+from string    import ascii_letters, digits
 
 # Import templlang modules
 from error  import TempLangError
-from parser import parse, Element, Attribute, Literal
+from parser import parse, Expression, Element, Attribute, Literal
+
 
 
 #------------------------------------------------------------------------------#
 class InterpreterError(TempLangError): pass
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class UnexpectedExpressionType(InterpreterError):
+    MESSAGE = 'Unexpected expression type'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class UnknownAttribute(InterpreterError):
     MESSAGE = 'Unknown attribute'
@@ -18,58 +24,127 @@ class UnknownAttribute(InterpreterError):
 class UnknownKeyword(InterpreterError):
     MESSAGE = 'Unknown keyword'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class UnknownAttributeForElement(InterpreterError):
+    MESSAGE = 'Unknown attribute for element'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class InvalidAttributeParameter(InterpreterError):
     MESSAGE = 'Invalid attribute option'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class InvalidExpressionForElement(InterpreterError):
+    MESSAGE = 'Invalid expression for element'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class TooFewAttributeParameter(InvalidAttributeParameter):
     MESSAGE = 'Too few attribute parameters'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 class TooManyAttributeParameters(InvalidAttributeParameter):
     MESSAGE = 'Too many attribute parameters'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class AttributeParameterTypeError(InvalidAttributeParameter):
+    MESSAGE = 'Attribute Parameter should be a Literal'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class TooFewExpressionsForElement(InvalidExpressionForElement):
+    MESSAGE = 'Too few expressions for element'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class TooManyExpressionsForElement(InvalidExpressionForElement):
+    MESSAGE = 'Too many expression for element'
 
 
 
 #------------------------------------------------------------------------------#
-def _element_eval(element, states):
-    try:
-        result = states.ELEM_KEYWORDS[element.value](element, states)
-        return '' if result is None else result
-    except KeyError:
-        raise UnknownKeyword(element.report)
+class Scope:
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    @property
+    def parent(self):
+        return self._parent
 
 
-
-#------------------------------------------------------------------------------#
-def _attribute_eval(attribute, states):
-    try:
-        states.ATTR_KEYWORDS[attribute.value](attribute, states)
-    except KeyError:
-        raise UnknownAttribute(attribute.report)
-
-
-
-#------------------------------------------------------------------------------#
-def _literal_eval(element, states):
-    pass
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def __init__(self, parent        = None,
+                       elem_keywords = None,
+                       attr_keywords = None):
+        self._parent        = parent
+        self._elem_keywords = elem_keywords or {}
+        self._attr_keywords = attr_keywords or {}
 
 
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def add_element(self, keyword,
+                          callback):
+        self._elem_keywords[keyword] = callback
 
-#------------------------------------------------------------------------------#
-def _use(attribute, states):
-    for package_name in attribute:
-        module = import_module('packages.' + package_name.value)
-        for attr in ('ROOT_BEHAVIOR',
-                     'ATTR_KEYWORDS',
-                     'ELEM_KEYWORDS'):
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def eval_element(self, element,
+                           states):
+        # If element is defined in the current scope
+        try:
+            result = self._elem_keywords[element.value](element, states)
+        except KeyError:
+            # If element is defined in parent scope
             try:
-                getattr(states, attr).update(getattr(module, attr))
+                result = self._parent.eval_element(element, states)
+            # If element is None
             except AttributeError:
-                pass
+                raise UnknownKeyword(element.report)
+
+        # If result is None or empty string
+        if not result:
+            return ''
+        # If result is an expression needs to be evaluated
+        elif isinstance(result, Expression):
+            return states.evaluate(result)
+        # If result is string
+        elif isinstance(result, str):
+            return result
+        # If result is something else
+        else:
+            raise TypeError('Unknown result type for '
+                            'eval_element: {}'.format(result.__class__.__name__))
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def eval_attribute(self, attribute,
+                             states):
+        try:
+            self._attr_keywords[attribute.value](attribute, states)
+        except KeyError:
+            raise UnknownAttribute(attribute.report)
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def eval_literal(self, literal,
+                           states):
+        return literal.value
 
 
 
 #------------------------------------------------------------------------------#
 class InterpreterStates:
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    @staticmethod
+    def _use(attribute,
+             states):
+        for package_name in attribute:
+            module = import_module('packages.' + package_name.value)
+            for attr in ('ATTR_KEYWORDS',
+                         'ELEM_KEYWORDS'):
+                try:
+                    getattr(states, attr).update(getattr(module, attr))
+                except AttributeError:
+                    pass
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    @staticmethod
+    def _empty(element,
+               states):
+        result = None
+        for expression in element:
+            result = evaluate(expression, states)
+        return result
+
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     @property
@@ -79,63 +154,61 @@ class InterpreterStates:
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     @property
-    def element_eval(self):
-        return self._root_behavior['element']
-
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    @property
-    def attribute_eval(self):
-        return self._root_behavior['attribute']
-
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    @property
-    def literal_eval(self):
-        return self._literal_eval['literal']
-
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    @property
-    def ROOT_BEHAVIOR(self):
-        return self._root_behavior
-
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-    @property
     def ATTR_KEYWORDS(self):
-        return self._attr_keywords
+        return self._scope._attr_keywords
 
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     @property
     def ELEM_KEYWORDS(self):
-        return self._elem_keywords
+        return self._scope._elem_keywords
 
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __init__(self, root,
                        output):
-        self._root          = root
-        self._output        = output
-        self._elem_keywords = {}
-        self._attr_keywords = {'use' : _use}
-        self._root_behavior = {'element'   : _element_eval,
-                               'attribute' : _attribute_eval,
-                               'literal'   : _literal_eval}
+        self._root   = root
+        self._output = output
+        self._scope  = Scope(elem_keywords = {'' : self._empty},
+                             attr_keywords = {'use' : self._use})
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def add_element(self, *args, **kwargs):
+        self._scope.add_element(*args, **kwargs)
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def evaluate(self, expression):
+        for type, attr in ((Element  , 'eval_element'),
+                           (Attribute, 'eval_attribute'),
+                           (Literal  , 'eval_literal')):
+            if isinstance(expression, type):
+                return getattr(self._scope, attr)(expression, self)
+        raise TypeError('Unknown expression type:' +
+                        expression.__class__.__name__)
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    def scope(self, evaluator):
+        def wrapped(*args, **kwargs):
+            # Open new scope
+            self._scope = Scope(self._scope)
+            # Evaluate expressions
+            result = evaluator(*args, **kwargs)
+            # Close scope
+            self._scope = self._scope.parent
+            # Return evaluated result
+            return result
+        return wrapped
 
 
 
 #------------------------------------------------------------------------------#
-def interpret(path  : str,
-              source: 'file',
-              output: 'file'):
-    root   = parse(path, source.read())
+def interpret(text   : str,
+              source : 'file',
+              output : 'file'):
+    root   = parse(text, source.read())
     states = InterpreterStates(root, output)
     for expression in root:
-        if isinstance(expression, Element):
-            states.element_eval(expression, states)
-        elif isinstance(expression, Attribute):
-            states.attribute_eval(expression, states)
-        elif isinstance(expression, Literal):
-            states.literal_eval(expression, states)
+        states.evaluate(expression)
