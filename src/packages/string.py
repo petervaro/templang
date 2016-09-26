@@ -2,20 +2,29 @@
 ## INFO ##
 
 # Import python modules
-from re import compile
+from re import compile, finditer
 
 # Import templang modules
 from parser      import Attribute
-from interpreter import (UnknownAttributeForElement,
+from interpreter import (InterpreterError,
+                         UnknownAttributeForElement,
                          AttributeParameterTypeError,
-                         ElementParameterTypeError)
+                         ElementParameterTypeError,
+                         TooFewAttributeParameter,
+                         TooManyAttributeParameters)
 
 
 #------------------------------------------------------------------------------#
 # Module level internal constants
-_FORMAT_ESCAPE  = {'%%', '%'}
-_FORMAT_VALID   = compile(r'(?<!%)%(?P<index>\d+)')
-_FORMAT_ILLEGAL = compile(r'')
+_FORMAT_VALID   = compile(r'(?<!%)%((?P<index>\d+)|(?P<next>\?))')
+
+
+#------------------------------------------------------------------------------#
+class FormatIndexOutOfRange(InterpreterError):
+    MESSAGE = 'Index in format specifier is out of range'
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+class FormatArgumentTypeError(InterpreterError):
+    MESSAGE = 'Argument is not a literal'
 
 
 #------------------------------------------------------------------------------#
@@ -52,9 +61,49 @@ def format_(element,
     Usage:
         (format [% <SPECIFIER>] <VALUE1> <VALUE2> <VALUE...>)
     Specifier:
-        %<index>
+        %?   - substitute with next argument
+        %<i> - substitute argument at i (where i starts from 0)
     """
+    specifiers = ''
+    arguments  = []
+    for expression in element:
+        if isinstance(expression, Attribute):
+            if expression.value == '%':
+                try:
+                    specifier_expr, *rest = expression
+                    if rest:
+                        raise TooManyAttributeParameters(expression.report)
+                except ValueError:
+                    raise TooFewAttributeParameter(expression.report)
+                specifier = states.evaluate(specifier_expr)
+                if not isinstance(specifier, str):
+                    raise AttributeParameterTypeError(specifier_expr.report)
+                specifiers += specifier
+            else:
+                raise UnknownAttributeForElement(expression.report)
+        else:
+            arguments.append(states.evaluate(expression))
 
+    i = 0
+    result = ''
+    iarguments = iter(arguments)
+    try:
+        for match in finditer(_FORMAT_VALID, specifiers):
+            result += specifier[i:match.start()]
+            i = match.end()
+            group = match.group('index')
+            if group:
+                substring = arguments[int(group)]
+            else:
+                substring = next(iarguments)
+            result += substring
+        result += specifiers[i:]
+    except (IndexError, StopIteration):
+        raise FormatIndexOutOfRange(element.report)
+    except TypeError:
+        raise FormatArgumentTypeError(substring.report)
+
+    return result
 
 
 

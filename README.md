@@ -3,8 +3,7 @@
 
 - - -
 
-templang
-========
+![templang][5]
 
 - [Abstract](#abstract)
 - [Rationale](#rationale)
@@ -217,3 +216,4 @@ If not, see <http://www.gnu.org/licenses>.
 [2]: http://www.gnu.org/licenses/gpl.html
 [3]: https://img.shields.io/badge/python-3.5.2-lightgrey.svg
 [4]: https://docs.python.org/3
+[5]: img/logo.png?raw=true "(temp[lang])"

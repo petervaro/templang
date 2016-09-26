@@ -32,7 +32,7 @@
 
 
 (*----------------------------------------------------------------------------*)
-($print (format [% {first: '%0 = %1', third: '%4 = %5', second: '%2 = %3'}]
+($print (format [% {first: %0 = '%1', third: %4 = '%5', second: %2 = '%3'}]
             (to-string (&prefix)) (&prefix)
             (to-string (&type))   (&type)
             (to-string (&suffix)) (&suffix)))
