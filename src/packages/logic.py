@@ -2,10 +2,12 @@
 ## INFO ##
 
 # Import templang modules
-from error       import TempLangError
-from parser      import (Literal,
+from parser      import (Element,
+                         Literal,
                          Attribute)
-from interpreter import (UnknownAttributeForElement,
+from interpreter import (InterpreterError,
+                         UnexpectedExpressionType,
+                         UnknownAttributeForElement,
                          InvalidExpressionForElement,
                          TooFewAttributeParameter,
                          TooManyAttributeParameters,
@@ -20,25 +22,25 @@ _DEFINITIONS = {}
 
 
 #------------------------------------------------------------------------------#
-class UndefinedVariable(TempLangError):
+class UndefinedVariable(InterpreterError):
     MESSAGE = 'Variable is undefined in this scope'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-class UnknownMixinArgument(TempLangError):
+class UnknownMixinArgument(InterpreterError):
     MESSAGE = 'Unknown argument for mixin'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-class MissingMixinName(TempLangError):
+class MissingMixinName(InterpreterError):
     MESSAGE = 'Name of mixin is missing'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-class InvalidMixinNameType(TempLangError):
+class InvalidMixinNameType(InterpreterError):
     MESSAGE = "Mixin name's type must be Literal"
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-class InvalidVariableNameType(TempLangError):
+class InvalidVariableNameType(InterpreterError):
     MESSAGE = "Variable name's type must be Literal"
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-class EmptyVariableName(TempLangError):
+class EmptyVariableName(InterpreterError):
     MESSAGE = 'Variable name cannot be empty Literal'
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-class MixinArgumentAlreadyDefined(TempLangError):
+class MixinArgumentAlreadyDefined(InterpreterError):
     MESSAGE = 'Mixin argument already defined'
 
 
@@ -48,8 +50,8 @@ def define(element,
            states):
     """
     Definitions are global and module idependent.
-    ($define '<NAME>') or
-    ($define '<NAME>' <VALUE>)
+    ($define <NAME>) or
+    ($define <NAME> <VALUE>)
     """
     name  = ''
     value = None
@@ -74,7 +76,7 @@ def define(element,
 def undefine(element,
              states):
     """
-    ($undefine '<NAME>')
+    ($undefine <NAME>)
     """
     name = None
     for expression in element:
@@ -100,7 +102,7 @@ def is_defined(element,
 def expose(element,
            states):
     """
-    ($expose '<NAME>')
+    ($expose <NAME>)
     """
     name = None
     for expression in element:
@@ -151,9 +153,8 @@ def var(element,
         states):
     """
     Variables are scope agnostic.
-    ($var '<NAME>' <VALUE>)
+    ($var <NAME> <VALUE>)
     """
-
     try:
         name_expr, value_expr, *rest = element
         if rest:
@@ -179,10 +180,10 @@ def mixin(element,
     Creates a mixin in the current scope.
     Evaluating the mixin will return its last expression.
     Usage:
-        ($mixin [name '<NAME>']
-                [args '<ARG1>' '<ARG2>']
-                [xarg '<XARG1>']
-                [xarg '<XARG2>' <DEFAULT>]
+        ($mixin [name <NAME>]
+                [args <ARG1> <ARG2>]
+                [xarg <XARG1>]
+                [xarg <XARG2> <DEFAULT>]
             <ELEMENTS>)
     """
     name_expr = None
@@ -305,6 +306,41 @@ def mixin(element,
 
 
 #------------------------------------------------------------------------------#
+def each(element,
+         states):
+    """
+    Usage:
+        (each [in <VARIABLE> <ITERABLE>] <ANYTHING>)
+    """
+    var         = None
+    iterable    = None
+    expressions = []
+    for expression in element:
+        if (isinstance(expression, Attribute) and
+            expression.value == 'in'):
+                try:
+                    var, iterable, *rest = expression
+                    if rest:
+                        TooManyAttributeParameters(rest[0].report)
+                except:
+                    TooFewAttributeParameter(expression.report)
+                var      = states.evaluate(var)
+                iterable = states.evaluate(iterable)
+        else:
+            expressions.append(expression)
+
+    if (var      is None or
+        iterable is None):
+            raise TooFewExpressionsForElement(element.report)
+
+    for value in iterable:
+        states.add_element(var, _eval_var([states.evaluate(value)]))
+        for expression in expressions:
+            states.evaluate(expression)
+
+
+
+#------------------------------------------------------------------------------#
 # Export keywords
 ELEM_KEYWORDS = {
     '$define'     : define,
@@ -315,6 +351,5 @@ ELEM_KEYWORDS = {
     '$mixin'      : mixin,
     #  '?'           : branch,
     #  '$switch'     : switch
-    #  '$for'        : for_,
-    #  '$while'      : while_
+    '$each'       : each,
 }

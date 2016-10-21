@@ -4,6 +4,7 @@
 # Import python modules
 from random    import choice
 from importlib import import_module
+from sys       import stdout as ostream
 from string    import ascii_letters, digits
 
 # Import templlang modules
@@ -90,18 +91,24 @@ class Scope:
             # If element is defined in parent scope
             try:
                 result = self._parent.eval_element(element, states)
-            # If element is None
+            # If parent is None
             except AttributeError:
-                raise UnknownKeyword(element.report)
+                # If a wild-card is registered
+                try:
+                    result = self._elem_keywords[NotImplemented](element, states)
+                # If there is no match
+                except KeyError:
+                    raise UnknownKeyword(element.report)
 
         # If result is None or empty string
         if not result:
             return ''
         # If result is an expression needs to be evaluated
-        elif isinstance(result, Expression):
-            return states.evaluate(result)
+        #  elif isinstance(result, Expression):
+        #      return states.evaluate(result)
         # If result is string
-        elif isinstance(result, str):
+        elif (isinstance(result, str) or
+              isinstance(result, Expression)):
             return result
         # If result is something else
         else:
@@ -132,6 +139,10 @@ class InterpreterStates:
     @staticmethod
     def _use(attribute,
              states):
+        """
+        Usage:
+            [use <PACKAGE1> <PACKAGE2> <PACKAGE...>]
+        """
         for package_expr in attribute:
             package_name = states.evaluate(package_expr)
             try:
@@ -150,6 +161,10 @@ class InterpreterStates:
     @staticmethod
     def _empty(element,
                states):
+        """
+        Usage:
+            ()
+        """
         result = None
         for expression in element:
             result = states.evaluate(expression)
@@ -160,6 +175,12 @@ class InterpreterStates:
     @property
     def output(self):
         return self._output
+
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+    @property
+    def stdout(self):
+        return self._stdout
 
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
@@ -176,9 +197,11 @@ class InterpreterStates:
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
     def __init__(self, root,
-                       output):
+                       output,
+                       stdout):
         self._root   = root
         self._output = output
+        self._stdout = stdout
         self._scope  = Scope(elem_keywords = {'' : self._empty},
                              attr_keywords = {'use' : self._use})
 
@@ -195,7 +218,7 @@ class InterpreterStates:
                            (Literal  , 'eval_literal')):
             if isinstance(expression, type):
                 return getattr(self._scope, attr)(expression, self)
-        raise TypeError('Unknown expression type:' +
+        raise TypeError('Unknown expression type: ' +
                         expression.__class__.__name__)
 
 
@@ -217,8 +240,9 @@ class InterpreterStates:
 #------------------------------------------------------------------------------#
 def interpret(text   : str,
               source : 'file',
-              output : 'file'):
+              output : 'file',
+              stdout : 'file' = ostream):
     root   = parse(text, source.read())
-    states = InterpreterStates(root, output)
+    states = InterpreterStates(root, output, stdout)
     for expression in root:
         states.evaluate(expression)

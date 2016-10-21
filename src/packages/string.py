@@ -121,7 +121,7 @@ def to_string(element,
 #------------------------------------------------------------------------------#
 # Export keywords
 ELEM_KEYWORDS = {
-    'join'       : join,
-    'format'     : format_,
-    'to-string'  : to_string
+    'join'      : join,
+    'format'    : format_,
+    'to-string' : to_string
 }

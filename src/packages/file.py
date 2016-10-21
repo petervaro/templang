@@ -48,10 +48,10 @@ def import_(element,
     Import other .tl file(s) and evaluate them.
     The extension can be omitted.
     Usage:
-        ($import [path {<PATH1>} {<PATH2>} {<PATH..>}]) or
-        ($import [path {<PATH1>}]
-                 [path {<PATH2>}]
-                 [path {<PATH..>}])
+        ($import [path <PATH1> <PATH2> <PATH..>]) or
+        ($import [path <PATH1>]
+                 [path <PATH2>]
+                 [path <PATH..>])
     """
     for path_literal in _get_path_from_attrs(element):
         path   = path_literal.value
@@ -61,7 +61,7 @@ def import_(element,
             path += '.tl'
         try:
             with open(path) as file:
-                interpret(path, file, states.output)
+                interpret(path, file, states.output, states.stdout)
                 for keyword, callback in export.items():
                     try:
                         states.add_element(keyword, callback)
@@ -102,10 +102,10 @@ def include(element,
     """
     Include other text file(s) as Literal.
     Usage:
-        ($include [path {<PATH1>} {<PATH2>} {<PATH..>}]) or
-        ($include [path {<PATH1>}]
-                  [path {<PATH2>}]
-                  [path {<PATH..>}])
+        ($include [path <PATH1> <PATH2> <PATH..>]) or
+        ($include [path <PATH1>]
+                  [path <PATH2>]
+                  [path <PATH..>])
     """
     result = Literal(None)
     for path_literal in _get_path_from_attrs(element):

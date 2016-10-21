@@ -11,13 +11,15 @@
 - [Formal grammar of templang](#formal-grammar-of-templang)
 - [Valid characters](#valid-characters)
 - [Naming conventions](#naming-conventions)
-- [References](#references)
 - [Usage](#usage)
 - [Dependencies](#dependencies)
 - [Packages](#packages)
 - [Built-in package: `io`](#built-in-package-io)
 - [Built-in package: `file`](#built-in-package-file)
 - [Built-in package: `logic`](#built-in-package-logic)
+- [Built-in package: `string`](#built-in-package-string)
+- [Built-in package: `html5`](#built-in-package-html5)
+- [Built-in package: `html`](#built-in-package-html)
 - [License](#license)
 
 
@@ -52,7 +54,7 @@ Features
 - Nested comments support
 - Full unicode character support (names can contain almost all characters)
 - Highly customisable and easily extensible implementation
-- built-in IO, module, logic, type, sytem and html support
+- built-in packages like: IO, file, logic, string, html, etc. support
 - Powerful error reporting and debugging
 
 
@@ -87,24 +89,26 @@ with hyphen (`-`).
 
     '$' + ELEMENT_NAME   : element with side effect(s)
     '$' + ATTRIBUTE_NAME : internal attribute
-    '&' + ELEMENT_NAME   : runtime defined variable
-    ELEMENT_NAME + '!'   : runtime defined element (function, mixin, etc.)
+    '&' + ELEMENT_NAME   : runtime defined variable (eg. argument)
+    ELEMENT_NAME + '!'   : runtime defined element (eg. mixin)
     UPPERCASE_NAME       : constant
 
-
-
-References
-----------
-
-    () : empty element OR group
-    [] : empty attribute
-    {} : empty literal
 
 
 Usage
 -----
 
-...
+    $ templang input.tl
+
+    -u, --usepath <path>        Additional package path
+    -o, --output <file>         Output name
+    -d, --directory <path>      Output directory
+    -w, --watch                 Watch for changes
+    -p, --print                 Print instead of writing to file
+    -v, --version               Version of templang
+    -h, --help                  Print this text
+    -*, --*                     Anything else will be passed to packages
+                                (Eg. -D, --define is used by the logic package)
 
 
 
@@ -116,6 +120,7 @@ Only packages have dependencies:
 - `html`
     - [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup)
     - [Markdown](http://pythonhosted.org/Markdown)
+    - [HTML5Lib](https://github.com/html5lib/html5lib-python)
 
 
 
@@ -123,7 +128,12 @@ Packages
 --------
 
 Templang's features can be extended via packages. To use a package, use the
-`[use {<PACKAGE>}]` attribute expression at the top level layer.
+`[use {<PACKAGE>}]` attribute expression at the top level of the document.
+
+Packages are implemented in python, and are capable of altering almost anything
+about the language! reusable code can be created inside templang as well with
+the buil-int `file` package, though that won't change how the language is
+working.
 
 
 
@@ -153,26 +163,6 @@ Built-in package: `logic`
 - `$var`
 - `$mixin`
 
-    Example definition:
-
-        ($mixin [name   'p!']
-                [args   'text']
-                [$xargs 'id']
-                [$xargs 'class']
-            (p ($xargs 'id')
-               ($xargs 'class')
-               [$join ' ']
-                    ($args 'text'))))
-
-    Example invocations:
-
-        (p! [class 'hello']     =>   (p [class 'hello']
-            'hello world!')             [$join ' ']
-                                        'hello world!')
-
-
-        (p! [text ''])          =>   (p [$join ' '] '')
-
 
 
 Built-in package: `string`
@@ -184,11 +174,24 @@ Built-in package: `string`
 
 
 
-Built-in package: `html`
---------------------------
+Built-in package: `html5`
+------------------------
 
 - all valid HTML5 tags + `!--`
 - `markdown`
+
+
+
+Built-in package: `html`
+------------------------
+
+> This package uses `html5` package under the hood, that is, anything available
+> in `html5` is available in this package as well, therefore `use`ing `html5`
+> along with this package is not necessary. It is highly recommended though to
+> use the stricter `html5` package, since this one acts as a wild-card, meaning
+> mistyped element names can lead to curious results, and silent errors!
+
+- Any unregistered element will be treated as an html tag
 
 
 

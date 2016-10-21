@@ -41,12 +41,12 @@
 
 (*----------------------------------------------------------------------------*)
 ($print {templang <<}
-        (shell [redirect] {python -c "print('hello world!')"}))
+        (shell [redirect] {python -c "print('hello world!', end='')"}))
 
 
-
-(* ($var {&i} (int {12}))
-($print (&i)) *)
-
-(* ($for {i} ($range (int {12}))
-    ($print ($to-string ($get {i})))) *)
+(*----------------------------------------------------------------------------*)
+(* ($var {&item} {ham})
+($print (&item))
+($each [in {&item} ({bacon} {steak})]
+    ($print (&item)))
+($print (&item)) *)

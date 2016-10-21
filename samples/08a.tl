@@ -5,10 +5,10 @@
 [use {file}]
 [use {logic}]
 
-($define {P1} {sweet})
+($define {STRING1} {sweet})
 
 ($write {hello} [end { }])
 ($import [path {../samples/08b.tl}])
-($write (include [path {../samples/08b.tl}]))
+($print ($expose {STRING2}))
 
-($print ($expose {P2}))
+($write (include [path {../samples/08b.tl}]) [end {}])

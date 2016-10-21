@@ -1,9 +1,6 @@
 ## INFO ##
 ## INFO ##
 
-# Import python modules
-from sys import stdout
-
 # Import templang modules
 from parser      import (Literal,
                          Attribute)
@@ -76,10 +73,10 @@ def print_(element,
     Usage:
         ($print <INPUTS> <OPTIONS>)
         OPTIONS:
-            [end {<END>}]
-            [sep {<SEPARATOR>}]
+            [end <END>]
+            [sep <SEPARATOR>]
     """
-    _print(element, states, stdout)
+    _print(element, states, states.stdout)
 
 
 
@@ -91,8 +88,8 @@ def write(element,
     Usage:
         ($write <INPUTS> <OPTIONS>)
         OPTIONS:
-            [end {<END>}]
-            [sep {<SEPARATOR>}]
+            [end <END>]
+            [sep <SEPARATOR>]
     """
     _print(element, states, states.output)
 

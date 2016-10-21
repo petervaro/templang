@@ -4,7 +4,7 @@
 [use {io}]
 [use {logic}]
 
-($define {P2} {potato})
-($print ($expose {P1}) [end { }])
+($define {STRING2} {potato})
+($print ($expose {STRING1}) [end { }])
 
 ($write {world!})

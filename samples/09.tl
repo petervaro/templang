@@ -4,7 +4,7 @@
 (* Use built-in packages *)
 [use {io}
      {file}
-     {html}]
+     {html5}]
 
 (* Markdown from external file *)
 (markdown (include [path {../samples/09.md}]))
